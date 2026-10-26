@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>⚽ Футбольная мафия — игра с друзьями</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070d1a; --bg2:#0b1425; --card:#101c33; --card2:#152a44;
+  --line:rgba(255,255,255,.08);
+  --gold:#f5c518; --red:#e5484d; --green:#3ecf8e; --blue:#4ea1ff;
+  --text:#eaf0fb; --muted:#8fa1bd;
+  --night:#0a1226; --day:#0d1a30;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  overflow-x:hidden;min-height:100vh;transition:background 1.2s ease;
+}
+body.night-mode{background:#050a18}
+body.day-mode{background:#0a1526}
+h1,h2,h3,.brand{font-family:'Unbounded',sans-serif}
+
+/* фоновые пятна света */
+.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bgfx .spot{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35;animation:float 14s ease-in-out infinite alternate}
+.spot.a{width:520px;height:520px;background:#1b3a6b;top:-160px;left:-120px}
+.spot.b{width:420px;height:420px;background:#5b4308;bottom:-140px;right:-100px;animation-delay:3s}
+.spot.c{width:300px;height:300px;background:#3a1b4d;top:40%;left:60%;animation-delay:6s}
+@keyframes float{from{transform:translateY(0) scale(1)}to{transform:translateY(46px) scale(1.12)}}
+.grain{position:fixed;inset:0;z-index:-1;opacity:.05;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")}
+
+.wrap{max-width:1240px;margin:0 auto;padding:20px clamp(12px,3vw,28px) 90px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 0 22px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:clamp(15px,2.4vw,21px);letter-spacing:.5px}
+.brand .ball{font-size:28px;animation:spin 8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand em{font-style:normal;color:var(--gold)}
+#roomTag{display:none;background:linear-gradient(135deg,#12223f,#0c1830);border:1px solid var(--line);
+  padding:8px 14px;border-radius:14px;font-size:13px;color:var(--muted)}
+#roomTag b{color:var(--gold);letter-spacing:3px;font-family:'Unbounded'}
+
+/* ============ ЛОГОТИН-ЭКРАН ============ */
+.hero{text-align:center;padding:min(9vh,80px) 0 34px}
+.hero h1{font-size:clamp(30px,6.4vw,64px);line-height:1.08;font-weight:800}
+.hero h1 .glow{background:linear-gradient(92deg,var(--gold),#ffe9a3 40%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 44px rgba(245,197,24,.25)}
+.hero p.sub{color:var(--muted);max-width:640px;margin:16px auto 0;font-size:clamp(14px,1.8vw,17px);line-height:1.6}
+.pill-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.pill{font-size:12.5px;padding:7px 14px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
+.pill b{color:var(--text)}
+
+.lobby-card{max-width:560px;margin:38px auto 0;background:linear-gradient(160deg,#111e38,#0b1526);
+  border:1px solid var(--line);border-radius:26px;padding:clamp(20px,4vw,34px);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06)}
+.tabs{display:flex;background:#0a1424;border:1px solid var(--line);border-radius:16px;padding:5px;gap:5px;margin-bottom:22px}
+.tabs button{flex:1;padding:12px;border:0;border-radius:12px;background:transparent;color:var(--muted);
+  font:700 15px 'Unbounded';cursor:pointer;transition:.25s}
+.tabs button.on{background:linear-gradient(135deg,#1c3157,#152a44);color:#fff;box-shadow:0 6px 20px -8px #000}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:7px}
+input.txt{width:100%;padding:15px 18px;border-radius:14px;border:1px solid var(--line);background:#0a1322;
+  color:var(--text);font:600 16px Manrope;outline:none;transition:.2s}
+input.txt:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,24,.12)}
+input.code{letter-spacing:8px;text-transform:uppercase;font-family:'Unbounded';text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:8px;
+  padding:16px;border:0;border-radius:15px;cursor:pointer;font:800 16px 'Unbounded';transition:.2s;position:relative;overflow:hidden}
+.btn.primary{background:linear-gradient(135deg,var(--gold),#d9a90b);color:#14100a;box-shadow:0 14px 34px -12px rgba(245,197,24,.55)}
+.btn.dark{background:linear-gradient(135deg,#233c66,#1a2c4c);color:#fff;border:1px solid rgba(255,255,255,.1)}
+.btn.danger{background:linear-gradient(135deg,#e5484d,#b3282d);color:#fff}
+.btn.ghost{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.btn:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.08)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.small{width:auto;padding:10px 18px;font-size:13px;border-radius:12px;margin-top:0}
+.err{color:#ff8589;font-size:14px;margin-top:12px;text-align:center;min-height:20px}
+
+.rules{max-width:900px;margin:56px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.rule{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:20px;padding:20px}
+.rule .ic{font-size:26px}
+.rule h3{font-size:14px;margin:10px 0 6px}
+.rule p{font-size:13px;color:var(--muted);line-height:1.55}
+
+/* ============ КОМНАТА ============ */
+#game{display:none}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media(max-width:1080px){.grid{grid-template-columns:1fr 1fr}.side-right{order:3;grid-column:1/-1}}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.panel{background:linear-gradient(170deg,#101b31,#0c1626);border:1px solid var(--line);border-radius:22px;
+  overflow:hidden;box-shadow:0 20px 50px -30px #000}
+.panel .head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--line)}
+.panel .head h3{font-size:12.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+
+/* статус фазы */
+.phase-bar{display:flex;align-items:center;gap:14px;padding:16px 20px;border-radius:22px;margin-bottom:16px;
+  border:1px solid var(--line);background:linear-gradient(120deg,#101c33,#0b1425);position:relative;overflow:hidden}
+.phase-bar::after{content:"";position:absolute;inset:0;background:radial-gradient(500px 120px at 10% -20%,rgba(245,197,24,.15),transparent)}
+.phase-bar.night{background:linear-gradient(120deg,#0b1026,#131a3d);border-color:#2b3a7d}
+.phase-bar.night::after{background:radial-gradient(500px 120px at 10% -20%,rgba(78,121,255,.2),transparent)}
+.phase-bar.day{background:linear-gradient(120deg,#1a2410,#101c33)}
+.phase-bar.day::after{background:radial-gradient(500px 120px at 10% -20%,rgba(62,207,142,.15),transparent)}
+.phase-icon{font-size:34px;z-index:1}
+.phase-info{z-index:1;flex:1}
+.phase-info b{font:800 17px 'Unbounded';display:block}
+.phase-info span{font-size:13px;color:var(--muted)}
+.timer{z-index:1;text-align:right}
+.timer b{font:800 clamp(24px,4vw,34px) 'Unbounded';color:var(--gold);display:block;line-height:1}
+.timer small{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.prog{height:4px;background:#0a1322;border-radius:4px;overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffdf7e);border-radius:4px;transition:width .5s linear}
+
+/* карточка игрока (моя роль) */
+.my-card{margin-bottom:16px;border-radius:22px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(150deg,#14203a,#0d1728);position:relative}
+.my-card.mafia{background:linear-gradient(150deg,#2a1035,#160a24);border-color:#57236b}
+.my-card .role-strip{display:flex;align-items:center;gap:10px;padding:13px 18px;font:800 13px 'Unbounded';letter-spacing:2px;text-transform:uppercase}
+.role-strip.citizen{background:linear-gradient(90deg,rgba(62,207,142,.18),transparent);color:#7ef0c0}
+.role-strip.mafia{background:linear-gradient(90deg,rgba(229,72,77,.22),transparent);color:#ff9aa0}
+.card-body{display:flex;gap:16px;padding:16px 18px 20px}
+.avatar{width:96px;height:120px;border-radius:16px;object-fit:cover;background:#0a1322;border:1px solid var(--line);flex-shrink:0}
+.avatar-ph{width:96px;height:120px;border-radius:16px;background:#0a1322;border:1px dashed var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:38px;flex-shrink:0}
+.who h2{font-size:clamp(17px,2.6vw,23px);line-height:1.15}
+.who .tag{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.hint{margin-top:9px;font-size:13.5px;line-height:1.55;color:#c9d6ec;background:rgba(255,255,255,.045);
+  border-left:3px solid var(--gold);padding:9px 12px;border-radius:0 10px 10px 0}
+.hint b{color:var(--gold)}
+.mates{margin-top:8px;font-size:13px;color:#ff9aa0}
+.deal-overlay{position:absolute;inset:0;background:rgba(7,13,26,.86);backdrop-filter:blur(6px);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;font:700 15px 'Unbounded';z-index:5}
+.spinner{width:44px;height:44px;border:4px solid #24406e;border-top-color:var(--gold);border-radius:50%;animation:rot 1s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* списки игроков */
+.plist{padding:10px}
+.prow{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:14px;transition:.2s;position:relative}
+.prow+.prow{margin-top:4px}
+.prow:hover{background:rgba(255,255,255,.04)}
+.prow.dead{opacity:.42;filter:grayscale(.7)}
+.prow .ava{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#24406e,#16274a);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;border:2px solid transparent}
+.prow.me .ava{border-color:var(--gold)}
+.prow .nm{flex:1;min-width:0}
+.prow .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .nm small{font-size:11.5px;color:var(--muted)}
+.badge{font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:800;letter-spacing:.6px;white-space:nowrap}
+.b-host{background:rgba(245,197,24,.15);color:var(--gold);border:1px solid rgba(245,197,24,.3)}
+.b-dead{background:rgba(229,72,77,.15);color:#ff8589}
+.b-alive{background:rgba(62,207,142,.13);color:#6ee7b0}
+.b-voted{background:rgba(78,161,255,.15);color:#8fc3ff;border:1px solid rgba(78,161,255,.35)}
+.b-mafia{background:rgba(229,72,77,.2);color:#ff9aa0}
+.b-citizen{background:rgba(62,207,142,.15);color:#7ef0c0}
+.prow .act{display:flex;gap:6px}
+.mini{padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1830;color:#cfe0ff;
+  font:700 12px Manrope;cursor:pointer;transition:.15s}
+.mini:hover{border-color:var(--gold);color:#fff}
+.mini.sel{background:var(--red);border-color:var(--red);color:#fff}
+.mini.vsel{background:var(--blue);border-color:var(--blue);color:#04122b}
+.mini.killbtn.sel{background:var(--red)}
+
+/* чат */
+.chatlog{height:min(46vh,420px);overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth}
+.chatlog::-webkit-scrollbar{width:6px}.chatlog::-webkit-scrollbar-thumb{background:#22365c;border-radius:6px}
+.msg{max-width:88%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.45;background:#152638;word-wrap:break-word;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg b.who{display:block;font-size:11px;color:var(--gold);margin-bottom:3px;letter-spacing:.5px}
+.msg.me{align-self:flex-end;background:#1d3a63}
+.msg.sys{align-self:center;background:transparent;color:var(--muted);font-size:12.5px;text-align:center}
+.msg.evt{align-self:center;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);color:#ffe9a3;font-size:13px;text-align:center;max-width:96%}
+.msg.mafia-msg{background:#2a1035;border:1px solid #57236b}
+.msg.mafia-msg b.who{color:#ff9aa0}
+.chan-tabs{display:flex;gap:6px;padding:10px 12px 0}
+.chan-tabs button{padding:7px 14px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0;background:#0b1425;
+  color:var(--muted);font:700 12px Manrope;cursor:pointer}
+.chan-tabs button.on{background:#152638;color:var(--text)}
+.chan-tabs button.mtab.on{color:#ff9aa0}
+.chat-in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.chat-in input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#0a1322;color:var(--text);font:500 14px Manrope;outline:none}
+.chat-in input:focus{border-color:var(--gold)}
+.chat-in button{width:46px;border:0;border-radius:12px;background:var(--gold);color:#14100a;font-size:18px;cursor:pointer;transition:.15s}
+.chat-in button:hover{filter:brightness(1.1)}
+
+/* хост-панель */
+.hostbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.hostbar .btn{flex:1;min-width:150px}
+
+/* финал */
+.finale{border-radius:24px;padding:34px 24px;text-align:center;margin-bottom:18px;border:1px solid var(--line);
+  background:radial-gradient(600px 260px at 50% -60%,rgba(245,197,24,.2),transparent),linear-gradient(160deg,#111e38,#0b1526);
+  animation:pop .5s ease}
+.finale h2{font-size:clamp(24px,5vw,40px);margin-bottom:10px}
+.finale.win h2{color:var(--gold)}
+.finale.lose h2{color:#ff8589}
+.finale p{color:var(--muted);margin-bottom:8px}
+.reveal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-top:18px;text-align:left}
+.rv{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:11px 13px;font-size:13px}
+.rv b{display:block;font-size:14px}
+.rv small{color:var(--muted)}
+.rv .rl{margin-top:5px}
+
+/* модалка правил */
+.modal{position:fixed;inset:0;background:rgba(4,8,18,.75);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+.modal.open{display:flex}
+.modal .box{max-width:640px;width:100%;background:#0e1930;border:1px solid var(--line);border-radius:22px;padding:28px;max-height:85vh;overflow:auto}
+.modal h2{margin-bottom:14px;font-size:22px}
+.modal ol{padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55;color:#c9d6ec}
+.modal .x{float:right}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1b2c4e;border:1px solid var(--line);
+  color:#fff;padding:13px 22px;border-radius:14px;font-size:14px;z-index:99;transition:.35s;opacity:0;box-shadow:0 20px 40px -10px #000}
+.toast.show{transform:translateX(-50%);opacity:1}
+code.kbd{background:#0a1322;border:1px solid var(--line);border-radius:8px;padding:2px 8px;font-family:'Unbounded';letter-spacing:2px;color:var(--gold)}
+.copyable{cursor:pointer}
+.footer-note{text-align:center;color:#41527a;font-size:12px;margin-top:44px}
+</style>
+</head>
+<body>
+<div class="bgfx"><div class="spot a"></div><div class="spot b"></div><div class="spot c"></div></div>
+<div class="grain"></div>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand"><span class="ball">⚽</span><span>ФУТБОЛЬНАЯ <em>МАФИЯ</em></span></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div id="roomTag">КОМНАТА <b id="roomCodeLbl" class="copyable" title="Нажмите, чтобы скопировать">—</b></div>
+    <button class="btn dark small" onclick="openRules()">Как играть?</button>
+  </div>
+</header>
+
+<!-- ================= ЭКРАН ВХОДА ================= -->
+<section id="landing">
+  <div class="hero">
+    <h1>Кто в городе <span class="glow">мафия</span>?<br>Разоблачи легенду футбола</h1>
+    <p class="sub">Мафия для компании друзей с футбольным твистом: каждый игрок тайно становится
+      знаменитым футболистом — его имя, фото и подсказка подтягиваются прямо из <b>Википедии</b>.
+      Мафия знает своих и каждую ночь «трансферует» горожан. Горожане спорят, гадают по досье и голосуют.</p>
+    <div class="pill-row">
+      <span class="pill">👥 <b>4–12</b> игроков</span>
+      <span class="pill">🌐 Реалтайм <b>мультиплеер</b> по WebSocket</span>
+      <span class="pill">📖 Досье из <b>Wikipedia API</b></span>
+      <span class="pill">🎙 Общий <b>чат</b> + тайный чат мафии</span>
+    </div>
+  </div>
+
+  <div class="lobby-card">
+    <div class="tabs">
+      <button id="tabCreate" class="on" onclick="setTab('create')">Создать игру</button>
+      <button id="tabJoin" onclick="setTab('join')">Присоединиться</button>
+    </div>
+    <div class="field">
+      <label>Ваш ник</label>
+      <input class="txt" id="nick" maxlength="20" placeholder="Например, Пеле-фан">
+    </div>
+    <div class="field" id="codeField" style="display:none">
+      <label>Код комнаты</label>
+      <input class="txt code" id="code" maxlength="5" placeholder="AB12C">
+    </div>
+    <button class="btn primary" id="goBtn" onclick="connect()">🏟️ Создать комнату</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><div class="ic">🕶️</div><h3>Роль футболиста</h3><p>При старте игры сервер тянет из Википедии случайную легенду футбола: вы видите её фото и урезанную вики-подсказку без имени героя.</p></div>
+    <div class="rule"><div class="ic">🌙</div><h3>Ночь</h3><p>Мафия в тайном чате выбирает жертву. Каждую ночь один игрок выбывает — но не знает, мафия он или горожанин, пока не станет призраком.</p></div>
+    <div class="rule"><div class="ic">☀️</div><h3>День</h3><p>Обсуждение в общем чате: рассказывайте «факты» о себе, ловите противоречия. Кто ваш футболист — секрет до конца раунда… или намёк?</p></div>
+    <div class="rule"><div class="ic">🗳️</div><h3>Голосование</h3><p>Изгнание большинства. Угадали мафию — город ликует. Казнили мирного — мафия улыбается.</p></div>
+  </div>
+</section>
+
+<!-- ================= ИГРА ================= -->
+<section id="game">
+  <div id="phaseBar" class="phase-bar"></div>
+  <div id="hostBar" class="hostbar" style="display:none"></div>
+  <div id="finaleBox"></div>
+  <div id="myCardBox"></div>
+
+  <div class="grid">
+    <aside class="side-left">
+      <div class="panel">
+        <div class="head"><h3>Игроки</h3><span id="aliveCount" style="font-size:12px;color:var(--muted)"></span></div>
+        <div class="plist" id="playersList"></div>
+      </div>
+    </aside>
+
+    <main class="side-center">
+      <div class="panel">
+        <div class="head"><h3>Хроника города</h3><span style="font-size:12px;color:var(--muted)" id="roundLbl"></span></div>
+        <div class="chatlog" id="eventLog" style="height:200px"></div>
+      </div>
+    </main>
+
+    <aside class="side-right">
+      <div class="panel">
+        <div class="head"><h3>Чат</h3></div>
+        <div class="chan-tabs" id="chanTabs"></div>
+        <div class="chatlog" id="chatLog"></div>
+        <div class="chat-in">
+          <input id="chatInput" placeholder="Ваша реплика…" maxlength="500" onkeydown="if(event.key==='Enter')sendChat()">
+          <button onclick="sendChat()">➤</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<div class="footer-note">Мультиплеер работает по WebSocket · данные футболистов — из Википедии (CC BY-SA)</div>
+</div>
+
+<!-- правила -->
+<div class="modal" id="rulesModal" onclick="if(event.target===this)closeRules()">
+  <div class="box">
+    <button class="btn ghost small x" onclick="closeRules()">✕</button>
+    <h2>📜 Правила «Футбольной мафии»</h2>
+    <ol>
+      <li><b>Соберите 4–12 человек.</b> Хост создаёт комнату и кидает друзьям код — они открывают этот же сайт на своих телефонах и жмут «Присоединиться».</li>
+      <li><b>Старт игры.</b> Каждый получает тайную роль — знаменитого футболиста из Википедии: портрет и короткую вики-подсказку, где вымарано имя героя.</li>
+      <li><b>Мафия.</b> Часть игроков — мафия. Она видит сообщников и общается в фиолетовом тайном чате.</li>
+      <li><b>🌙 Ночь (40 сек).</b> Мафия выбирает жертву кнопкой «🔪» рядом с игроком. Жертва «трансферируется» и выбывает.</li>
+      <li><b>☀️ День (150 сек).</b> Все живые обсуждают в общем чате. Подсказка вашего футболиста — ваше алиби: «я забил 700 голов», «меня называли Чёрный Паук» и т.п.</li>
+      <li><b>🗳️ Голосование (40 сек).</b> Каждый голосует кнопкой «🗳». Кто набрал больше всех — изгоняется, и всем открывается, был ли он мафией, плюс его футболист.</li>
+      <li><b>Победа.</b> Горожане побеждают, когда вся мафия изгнана. Мафия — когда её ряды сравняются с числом мирных жителей.</li>
+      <li><b>Мёртвые</b> становятся наблюдателями: видят роли всех и веселятся.</li>
+    </ol>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
